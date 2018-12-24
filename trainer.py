@@ -23,7 +23,6 @@ def handle_unit_born_event(event, me):
     if player is not me:
         return 0
 
-    # TODO: Copy supply check to unit_done_event. Maintain what unit id's belong to which player
     supply = event.unit.supply
     if supply > 0:
         me.current_food_used += supply
@@ -42,12 +41,27 @@ def handle_unit_init_event(event, me):
     if player is not me:
         return 0
 
+# TODO: Not perfect. Depots add their supply on InitEvent
+    supply = event.unit.supply
+    if supply > 0:
+        me.current_food_used += supply
+    elif supply < 0:
+        me.current_food_made += supply
+
     print("Unit init: " + event.unit.name)
     return 0
 
 def handle_upgrade_complete_event(event, me):
     return 0
 
+def handle_basic_command_event(event, me):
+    print("BASIC_COMMAND_EVENT:" + event.ability_name)
+    ability = event.ability
+
+
+    return 0
+
+# TODO Create building, "build event"
 # TODO Unit cancelled event, restore resources
 # TODO Target frames, when should event be done? If target frame is met in a handler, set a property on the player and return from the program
 # TODO Handle Upgrade initiated (Train XYZ?)
@@ -129,6 +143,8 @@ for i in range(0, len(replay.events)):
         macro_score += handle_unit_done_event(event, me)
     elif type(event) is sc2reader.events.tracker.UpgradeCompleteEvent:
         macro_score += handle_upgrade_complete_event(event, me)
+    elif type(event) is sc2reader.events.game.BasicCommandEvent:
+        macro_score += handle_basic_command_event(event, me)
     #print()
 
     if me.done:

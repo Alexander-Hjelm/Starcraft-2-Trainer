@@ -1,9 +1,6 @@
 import sys
 import sc2reader
 
-def handle_camera_event(event, me):
-    return 0
-
 def handle_player_stats_event(event, me):
     player = event.player
     if player is not me:
@@ -28,11 +25,11 @@ def handle_unit_born_event(event, me):
     if supply < 0:
         me.current_food_made += supply
 
-    print("Unit born: " + event.unit.name)
+    #print("Unit born: " + event.unit.name)
     return food_and_resources_check(event, me)
 
 def handle_unit_done_event(event, me):
-    print("Unit done: " + event.unit.name)
+    #print("Unit done: " + event.unit.name)
     player = event.unit.owner
     if player is not me:
         return 0
@@ -62,7 +59,16 @@ def handle_unit_init_event(event, me):
     if player is not me:
         return 0
 
-    print("Unit init: " + event.unit.name)
+
+    unit = event.unit
+    supply = unit.supply
+    if supply > 0:
+        me.current_food_used += unit.supply
+    me.current_minerals -= unit.minerals
+    me.current_vespene -= unit.vespene
+
+    #print("INIT UNIT: " + unit.name)
+
     return food_and_resources_check(event, me)
 
 def handle_upgrade_complete_event(event, me):
@@ -72,7 +78,7 @@ def handle_basic_command_event(event, me):
     print("BASIC_COMMAND_EVENT:" + event.ability_name)
     ability = event.ability
     if(ability.is_build):
-        print("BUILD UNIT: " + ability.build_unit.name)
+        #print("BUILD UNIT: " + ability.build_unit.name)
         unit = ability.build_unit
         supply = unit.supply
         if supply > 0:
@@ -80,13 +86,13 @@ def handle_basic_command_event(event, me):
         me.current_minerals -= unit.minerals
         me.current_vespene -= unit.vespene
 
+    # TODO Handle Stop event (Unit cancelled event, restore resources)
+    if event.ability_name == "Stop":
+        print("STOP_EVENT")
+        print(ability.name)
     # TODO Handle Upgrade initiated here
 
     return food_and_resources_check(event, me)
-
-# TODO Create building, "build event"
-# TODO Unit cancelled event, restore resources
-# TODO Unit destroyed event, restore supply
 
 def food_and_resources_check(event, me):
     frame = event.frame
@@ -150,10 +156,8 @@ me.last_checked_frame = 0
 for i in range(0, len(replay.events)):
     event = replay.events[i]
 
-    print(event.name)
-    print(type(event))
-    if type(event) is sc2reader.events.game.CameraEvent:
-        macro_score += handle_camera_event(event, me)
+    #print(event.name)
+    #print(type(event))
     elif type(event) is sc2reader.events.tracker.PlayerStatsEvent:
         macro_score += handle_player_stats_event(event, me)
     elif type(event) is sc2reader.events.tracker.UnitBornEvent:

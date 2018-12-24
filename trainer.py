@@ -1,8 +1,8 @@
 import sys
 import sc2reader
 
-def handle_camera_event(event):
-    print("Handling CameraEvent...")
+def handle_camera_event(event, me):
+    return 0
 
 def handle_player_stats_event(event, me):
     player = event.player
@@ -13,20 +13,23 @@ def handle_player_stats_event(event, me):
     print("Handling PlayerStatsEvent...")
     if minerals + vespene > 500:
         return -10
-    return 0;
+    return 0
 
-def handle_unit_born_event(event):
+def handle_unit_born_event(event, me):
     player = event.unit_controller
     print("Unit born: " + event.unit.name)
     #print(event.unit.minerals)
     #print(event.unit.vespene)
+    return 0
 
-def handle_unit_done_event(event):
+def handle_unit_done_event(event, me):
     print("Unit done: " + event.unit.name)
+    return 0
 
-def handle_unit_init_event(event):
+def handle_unit_init_event(event, me):
     player = event.unit_controller
     print("Unit init: " + event.unit.name)
+    return 0
 
 replay = sc2reader.load_replay('MyReplay.SC2Replay', load_map=True)
 
@@ -55,18 +58,18 @@ if me is None:
 for i in range(0, len(replay.events)):
     event = replay.events[i]
 
-    print(event.name)
-    print(type(event))
+    #print(event.name)
+    #print(type(event))
     if type(event) is sc2reader.events.game.CameraEvent:
-        handle_camera_event(event)
+        macro_score += handle_camera_event(event, me)
     elif type(event) is sc2reader.events.tracker.PlayerStatsEvent:
         macro_score += handle_player_stats_event(event, me)
     elif type(event) is sc2reader.events.tracker.UnitBornEvent:
-        handle_unit_born_event(event)
+        macro_score += handle_unit_born_event(event, me)
     elif type(event) is sc2reader.events.tracker.UnitInitEvent:
-        handle_unit_init_event(event)
+        macro_score += handle_unit_init_event(event, me)
     elif type(event) is sc2reader.events.tracker.UnitDoneEvent:
-        handle_unit_done_event(event)
-    print()
+        macro_score += handle_unit_done_event(event, me)
+    #print()
 
 print("final macro score: " + str(macro_score))

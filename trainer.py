@@ -158,7 +158,7 @@ for i in range(0, len(replay.events)):
 
     #print(event.name)
     #print(type(event))
-    elif type(event) is sc2reader.events.tracker.PlayerStatsEvent:
+    if type(event) is sc2reader.events.tracker.PlayerStatsEvent:
         macro_score += handle_player_stats_event(event, me)
     elif type(event) is sc2reader.events.tracker.UnitBornEvent:
         macro_score += handle_unit_born_event(event, me)
@@ -176,5 +176,7 @@ for i in range(0, len(replay.events)):
 
     if me.done:
         break
+
+macro_score = round(macro_score)
 
 print("final macro score: " + str(macro_score))

@@ -8,19 +8,30 @@ def handle_player_stats_event(event, me):
     player = event.player
     if player is not me:
         return 0
-    minerals = event.minerals_current
-    vespene = event.vespene_current
-    #print("Handling PlayerStatsEvent...")
-    if minerals + vespene > 500:
-        return -10
-    return 0
+
+    me.current_food_used = event.food_used
+    me.current_food_made = event.food_made
+    me.current_minerals = event.minerals_current
+    me.current_vespene = event.vespene_current
+
+    score_delta = food_and_resources_check(event, me)
+
+    return score_delta
 
 def handle_unit_born_event(event, me):
     player = event.unit_controller
+    if player is not me:
+        return 0
+
+    # TODO: Copy supply check to unit_done_event. Maintain what unit id's belong to which player
+    supply = event.unit.supply
+    if supply > 0:
+        me.current_food_used += supply
+    elif supply < 0:
+        me.current_food_made += supply
+
     print("Unit born: " + event.unit.name)
-    #print(event.unit.minerals)
-    #print(event.unit.vespene)
-    return 0
+    return food_and_resources_check(event, me)
 
 def handle_unit_done_event(event, me):
     print("Unit done: " + event.unit.name)
@@ -28,21 +39,55 @@ def handle_unit_done_event(event, me):
 
 def handle_unit_init_event(event, me):
     player = event.unit_controller
+    if player is not me:
+        return 0
+
     print("Unit init: " + event.unit.name)
     return 0
 
 def handle_upgrade_complete_event(event, me):
     return 0
 
+# TODO Unit cancelled event, restore resources
+# TODO Target frames, when should event be done? If target frame is met in a handler, set a property on the player and return from the program
+# TODO Handle Upgrade initiated (Train XYZ?)
+# TODO Unit destroyed event, restore supply
+
+def food_and_resources_check(event, me):
+    frame = event.frame
+    delta_frames = frame - me.last_checked_frame
+
+    food_used = me.current_food_used
+    food_made = me.current_food_made
+    minerals = me.current_minerals
+    vespene = me.current_vespene
+
+    score_delta = 0
+
+    if food_used >= food_made:
+        score_delta -= 1.6 * delta_frames
+
+    #print("Handling PlayerStatsEvent...")
+    if minerals + vespene > 500:
+        score_delta -= 1.6 * delta_frames
+
+    me.last_checked_frame = frame
+    if frame >= me.checked_seconds * 16:
+        me.done = True
+
+    return score_delta
+
 replay = sc2reader.load_replay('MyReplay.SC2Replay', load_map=True)
 
-macro_score = 10000;
+macro_score = 10000.0;
 
 print(replay.map_name)
 print(replay.type)
 
 my_name = "Groove"
 me = None
+t_min = 5
+t_sec = 0
 
 # print all players
 for i in range(0, len(replay.teams)):
@@ -57,6 +102,15 @@ for i in range(0, len(replay.teams)):
 if me is None:
     print("Failed to initialize me")
     sys.exit()
+
+me.checked_seconds = t_min * 60 + t_sec
+me.done = False
+
+me.current_food_used = 0
+me.current_food_made = 0
+me.current_minerals = 0
+me.current_vespene = 0
+me.last_checked_frame = 0
 
 for i in range(0, len(replay.events)):
     event = replay.events[i]
@@ -76,5 +130,8 @@ for i in range(0, len(replay.events)):
     elif type(event) is sc2reader.events.tracker.UpgradeCompleteEvent:
         macro_score += handle_upgrade_complete_event(event, me)
     #print()
+
+    if me.done:
+        break
 
 print("final macro score: " + str(macro_score))

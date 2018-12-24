@@ -23,10 +23,9 @@ def handle_unit_born_event(event, me):
     if player is not me:
         return 0
 
+    # Overlords gain supply when spawned
     supply = event.unit.supply
-    if supply > 0:
-        me.current_food_used += supply
-    elif supply < 0:
+    if supply < 0:
         me.current_food_made += supply
 
     print("Unit born: " + event.unit.name)
@@ -34,22 +33,37 @@ def handle_unit_born_event(event, me):
 
 def handle_unit_done_event(event, me):
     print("Unit done: " + event.unit.name)
-    return 0
+    player = event.unit.owner
+    if player is not me:
+        return 0
+
+    # Pylons and Depots gain supply when done
+    supply = event.unit.supply
+    if supply < 0:
+        me.current_food_made += supply
+
+    return food_and_resources_check(event, me)
+
+def handle_unit_died_event(event, me):
+    player = event.unit.owner
+    if player is not me:
+        return 0
+
+    unit = event.unit
+    supply = unit.supply
+
+    if supply > 0:
+        me.current_food_used -= supply
+
+    return food_and_resources_check(event, me)
 
 def handle_unit_init_event(event, me):
     player = event.unit_controller
     if player is not me:
         return 0
 
-# TODO: Not perfect. Depots add their supply on InitEvent
-    supply = event.unit.supply
-    if supply > 0:
-        me.current_food_used += supply
-    elif supply < 0:
-        me.current_food_made += supply
-
     print("Unit init: " + event.unit.name)
-    return 0
+    return food_and_resources_check(event, me)
 
 def handle_upgrade_complete_event(event, me):
     return 0
@@ -57,14 +71,21 @@ def handle_upgrade_complete_event(event, me):
 def handle_basic_command_event(event, me):
     print("BASIC_COMMAND_EVENT:" + event.ability_name)
     ability = event.ability
+    if(ability.is_build):
+        print("BUILD UNIT: " + ability.build_unit.name)
+        unit = ability.build_unit
+        supply = unit.supply
+        if supply > 0:
+            me.current_food_used += unit.supply
+        me.current_minerals -= unit.minerals
+        me.current_vespene -= unit.vespene
 
+    # TODO Handle Upgrade initiated here
 
-    return 0
+    return food_and_resources_check(event, me)
 
 # TODO Create building, "build event"
 # TODO Unit cancelled event, restore resources
-# TODO Target frames, when should event be done? If target frame is met in a handler, set a property on the player and return from the program
-# TODO Handle Upgrade initiated (Train XYZ?)
 # TODO Unit destroyed event, restore supply
 
 def food_and_resources_check(event, me):
@@ -100,7 +121,7 @@ print(replay.type)
 
 my_name = "Groove"
 me = None
-t_min = 5
+t_min = 10
 t_sec = 0
 
 # print all players
@@ -129,8 +150,8 @@ me.last_checked_frame = 0
 for i in range(0, len(replay.events)):
     event = replay.events[i]
 
-    #print(event.name)
-    #print(type(event))
+    print(event.name)
+    print(type(event))
     if type(event) is sc2reader.events.game.CameraEvent:
         macro_score += handle_camera_event(event, me)
     elif type(event) is sc2reader.events.tracker.PlayerStatsEvent:
@@ -145,6 +166,8 @@ for i in range(0, len(replay.events)):
         macro_score += handle_upgrade_complete_event(event, me)
     elif type(event) is sc2reader.events.game.BasicCommandEvent:
         macro_score += handle_basic_command_event(event, me)
+    elif type(event) is sc2reader.events.tracker.UnitDiedEvent:
+        macro_score += handle_unit_died_event(event, me)
     #print()
 
     if me.done:

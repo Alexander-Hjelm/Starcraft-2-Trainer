@@ -74,7 +74,15 @@ def handle_unit_init_event(event, me):
 def handle_upgrade_complete_event(event, me):
     return 0
 
+def handle_data_command_event(event, me):
+    print("DATA_COMMAND_EVENT:" + event.ability_name)
+    print(event.ability.build_unit)
+    return 0
+
 def handle_basic_command_event(event, me):
+    if event.player is not me:
+        return 0
+
     print("BASIC_COMMAND_EVENT:" + event.ability_name)
     ability = event.ability
     if(ability.is_build):
@@ -86,11 +94,11 @@ def handle_basic_command_event(event, me):
         me.current_minerals -= unit.minerals
         me.current_vespene -= unit.vespene
 
-    # TODO Handle Stop event (Unit cancelled event, restore resources)
+    # TODO Handle Stop event (Unit cancelled event, restore resources) (Can I get the entity that was stopped?)
     if event.ability_name == "Stop":
         print("STOP_EVENT")
-        print(ability.name)
-    # TODO Handle Upgrade initiated here
+        print(event.name)
+    # TODO Handle Upgrade initiated here (can I extract the upgrade and its cost?)
 
     return food_and_resources_check(event, me)
 
@@ -127,7 +135,7 @@ print(replay.type)
 
 my_name = "Groove"
 me = None
-t_min = 10
+t_min = 20
 t_sec = 0
 
 # print all players
@@ -170,6 +178,8 @@ for i in range(0, len(replay.events)):
         macro_score += handle_upgrade_complete_event(event, me)
     elif type(event) is sc2reader.events.game.BasicCommandEvent:
         macro_score += handle_basic_command_event(event, me)
+    elif type(event) is sc2reader.events.game.DataCommandEvent:
+        macro_score += handle_data_command_event(event, me)
     elif type(event) is sc2reader.events.tracker.UnitDiedEvent:
         macro_score += handle_unit_died_event(event, me)
     #print()

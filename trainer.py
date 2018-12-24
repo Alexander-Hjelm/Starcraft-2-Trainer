@@ -10,7 +10,7 @@ def handle_player_stats_event(event, me):
         return 0
     minerals = event.minerals_current
     vespene = event.vespene_current
-    print("Handling PlayerStatsEvent...")
+    #print("Handling PlayerStatsEvent...")
     if minerals + vespene > 500:
         return -10
     return 0
@@ -29,6 +29,9 @@ def handle_unit_done_event(event, me):
 def handle_unit_init_event(event, me):
     player = event.unit_controller
     print("Unit init: " + event.unit.name)
+    return 0
+
+def handle_upgrade_complete_event(event, me):
     return 0
 
 replay = sc2reader.load_replay('MyReplay.SC2Replay', load_map=True)
@@ -70,6 +73,8 @@ for i in range(0, len(replay.events)):
         macro_score += handle_unit_init_event(event, me)
     elif type(event) is sc2reader.events.tracker.UnitDoneEvent:
         macro_score += handle_unit_done_event(event, me)
+    elif type(event) is sc2reader.events.tracker.UpgradeCompleteEvent:
+        macro_score += handle_upgrade_complete_event(event, me)
     #print()
 
 print("final macro score: " + str(macro_score))

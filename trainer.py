@@ -129,10 +129,10 @@ def handle_basic_command_event(event, me):
 
     for i in range(0, len(build_order_research)):
         research = build_order_research[i]
-        #print("CHECKING: '" + unit.name + "' against '" + building.name + "'")
+        #print("CHECKING: '" + event.ability_name + "' against '" + research.name + "'")
         if event.ability_name == research.name:
-            #print("BUILT: " + unit.name + " from build order")
-            supply_diff = me.current_food_used - building.supply
+            #print("RESEARCHED: " + research.name + " from build order")
+            supply_diff = me.current_food_used - research.supply
             if supply_diff > 0:
                 # Building was too early
                 build_order_score_diff -= supply_diff * 100
@@ -141,7 +141,7 @@ def handle_basic_command_event(event, me):
                 # Building was too late
                 build_order_score_diff -= -supply_diff * 100
                 #print("TOO LATE: " + event.ability_name)
-            build_order_research.remove(building)
+            build_order_research.remove(research)
             break
 
     return build_order_score_diff + food_and_resources_check(event, me)
@@ -244,13 +244,15 @@ for i in range(0, len(replay.events)):
         macro_score += handle_data_command_event(event, me)
     elif type(event) is sc2reader.events.tracker.UnitDiedEvent:
         macro_score += handle_unit_died_event(event, me)
-    #print()
 
     if len(build_order_buildings) == 0 and len(build_order_research) == 0:
         me.done = True
 
     if me.done:
         break
+
+# Subtract for every building and research left
+macro_score -= (len(build_order_buildings) + len(build_order_research)) * 1000
 
 # Time factor
 #print(me.last_checked_frame)

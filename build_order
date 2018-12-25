@@ -10,7 +10,7 @@
 23:b:Barracks
 26:b:BarracksTechLab
 27:b:OrbitalCommand
-30:r:Stimpack<-----------------
+30:r:ResearchStimpack
 31:b:BarracksReactor
 34:b:Factory
 36:b:Refinery
@@ -20,4 +20,4 @@
 47:b:SupplyDepot
 47:b:FactoryReactor
 63:b:EngineeringBay
-69:r:CombatShields<-----------------
+69:r:ResearchCombatShield

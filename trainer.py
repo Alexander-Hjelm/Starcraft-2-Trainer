@@ -123,8 +123,26 @@ def handle_basic_command_event(event, me):
         #print("STOP_EVENT")
         print(event.name)
     # TODO Handle Upgrade initiated here (can I extract the upgrade and its cost?)
+    build_order_score_diff = 0
 
-    return food_and_resources_check(event, me)
+    for i in range(0, len(build_order_research)):
+        research = build_order_research[i]
+        #print("CHECKING: '" + unit.name + "' against '" + building.name + "'")
+        if event.ability_name == research.name:
+            #print("BUILT: " + unit.name + " from build order")
+            supply_diff = me.current_food_used - building.supply
+            if supply_diff > 0:
+                # Building was too early
+                build_order_score_diff -= supply_diff * 100
+                #print("TOO EARLY: " + event.ability_name)
+            elif supply_diff < 0:
+                # Building was too late
+                build_order_score_diff -= -supply_diff * 100
+                #print("TOO LATE: " + event.ability_name)
+            build_order_research.remove(building)
+            break
+
+    return build_order_score_diff + food_and_resources_check(event, me)
 
 def food_and_resources_check(event, me):
     frame = event.frame
@@ -174,11 +192,13 @@ t_min = int(content[0][0])
 t_sec = int(content[0][1])
 
 build_order_buildings = []
+build_order_research = []
 
 for i in range(1, len(content)):
     if content[i][1] == "b":
         build_order_buildings.append(SupplyNamePair(int(content[i][0]), content[i][2]))
-    #TODO: Add upgrades here
+    if content[i][1] == "r":
+        build_order_research.append(SupplyNamePair(int(content[i][0]), content[i][2]))
 
 # print all players
 for i in range(0, len(replay.teams)):

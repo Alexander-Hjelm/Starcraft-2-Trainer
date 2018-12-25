@@ -4,12 +4,12 @@
 16:b:Refinery
 19:b:OrbitalCommand
 19:b:BarracksReactor
-19:b:CommandCenter
+19:r:UpgradeToOrbitalCommand
 20:b:Barracks
 22:b:SupplyDepot
 23:b:Barracks
 26:b:BarracksTechLab
-27:b:OrbitalCommand
+27:r:UpgradeToOrbitalCommand
 30:r:ResearchStimpack
 31:b:BarracksReactor
 34:b:Factory
@@ -18,6 +18,6 @@
 41:b:SupplyDepot
 47:b:Starport
 47:b:SupplyDepot
-47:b:FactoryReactor
+47:b:StarportReactor
 63:b:EngineeringBay
 69:r:ResearchCombatShield

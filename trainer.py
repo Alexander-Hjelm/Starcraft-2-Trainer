@@ -91,7 +91,7 @@ def handle_unit_init_event(event, me, build_order_buildings):
             build_order_buildings.remove(building)
             break
 
-    #print("INIT UNIT: " + unit.name)
+    print("INIT UNIT: " + str(round(event.frame)) + " " + unit.name)
 
     return build_order_score_diff + food_and_resources_check(event, me)
 
@@ -170,9 +170,9 @@ def food_and_resources_check(event, me):
 
     return score_delta
 
-replay = sc2reader.load_replay('MyReplay.SC2Replay', load_map=True)
+replay = sc2reader.load_replay('Better.SC2Replay', load_map=True)
 
-macro_score = 10000.0;
+macro_score = 100000.0;
 
 print(replay.map_name)
 print(replay.type)
@@ -191,6 +191,7 @@ for i in range(0, len(content)):
 #Total build order time
 t_min = int(content[0][0])
 t_sec = int(content[0][1])
+game_fps = replay.game_fps
 
 build_order_buildings = []
 build_order_research = []
@@ -246,6 +247,8 @@ for i in range(0, len(replay.events)):
     elif type(event) is sc2reader.events.tracker.UnitDiedEvent:
         macro_score += handle_unit_died_event(event, me)
 
+    #print(build_order_buildings[0].name)
+
     if len(build_order_buildings) == 0 and len(build_order_research) == 0:
         me.done = True
 
@@ -258,8 +261,9 @@ macro_score -= (len(build_order_buildings) + len(build_order_research)) * 1000
 # Time factor
 #print(me.last_checked_frame)
 #print(me.checked_seconds * 16)
-time_factor = me.checked_seconds * 16 / me.last_checked_frame
+time_factor = me.checked_seconds * game_fps / me.last_checked_frame
 
 macro_score = max(round(macro_score) * time_factor, 0)
 
+print(game_fps)
 print("final macro score: " + str(macro_score))

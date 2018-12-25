@@ -1,6 +1,11 @@
 import sys
 import sc2reader
 
+class SupplyNamePair():
+    def __init__(self, supply, name):
+        self.supply = supply
+        self.name = name
+
 def handle_player_stats_event(event, me):
     player = event.player
     if player is not me:
@@ -54,11 +59,10 @@ def handle_unit_died_event(event, me):
 
     return food_and_resources_check(event, me)
 
-def handle_unit_init_event(event, me):
+def handle_unit_init_event(event, me, build_order_buildings):
     player = event.unit_controller
     if player is not me:
         return 0
-
 
     unit = event.unit
     supply = unit.supply
@@ -67,9 +71,29 @@ def handle_unit_init_event(event, me):
     me.current_minerals -= unit.minerals
     me.current_vespene -= unit.vespene
 
+    build_order_score_diff = 0
+
+    # TODO: Not perfect. Should remove the building from build_order_buildings when it is complete. Consider a temporary buildings_in_progress struct
+    for i in range(0, len(build_order_buildings)):
+        building = build_order_buildings[i]
+        #print("CHECKING: '" + unit.name + "' against '" + building.name + "'")
+        if unit.name == building.name:
+            #print("BUILT: " + unit.name + " from build order")
+            supply_diff = me.current_food_used - building.supply
+            if supply_diff > 0:
+                # Building was too early
+                build_order_score_diff -= supply_diff * 100
+                #print("TOO EARLY: " + unit.name)
+            elif supply_diff < 0:
+                # Building was too late
+                build_order_score_diff -= -supply_diff * 100
+                #print("TOO LATE: " + unit.name)
+            build_order_buildings.remove(building)
+            break
+
     print("INIT UNIT: " + unit.name)
 
-    return food_and_resources_check(event, me)
+    return build_order_score_diff + food_and_resources_check(event, me)
 
 def handle_upgrade_complete_event(event, me):
     return 0
@@ -136,8 +160,25 @@ print(replay.type)
 
 my_name = "Groove"
 me = None
-t_min = 15
-t_sec = 0
+
+content = None
+#Read build order file
+with open("build_order") as f:
+    content = f.readlines()
+
+for i in range(0, len(content)):
+    content[i] = content[i].rstrip().split(":")
+
+#Total build order time
+t_min = int(content[0][0])
+t_sec = int(content[0][1])
+
+build_order_buildings = []
+
+for i in range(1, len(content)):
+    if content[i][1] == "b":
+        build_order_buildings.append(SupplyNamePair(int(content[i][0]), content[i][2]))
+    #TODO: Add upgrades here
 
 # print all players
 for i in range(0, len(replay.teams)):
@@ -172,7 +213,7 @@ for i in range(0, len(replay.events)):
     elif type(event) is sc2reader.events.tracker.UnitBornEvent:
         macro_score += handle_unit_born_event(event, me)
     elif type(event) is sc2reader.events.tracker.UnitInitEvent:
-        macro_score += handle_unit_init_event(event, me)
+        macro_score += handle_unit_init_event(event, me, build_order_buildings)
     elif type(event) is sc2reader.events.tracker.UnitDoneEvent:
         macro_score += handle_unit_done_event(event, me)
     elif type(event) is sc2reader.events.tracker.UpgradeCompleteEvent:

@@ -91,7 +91,7 @@ def handle_unit_init_event(event, me, build_order_buildings):
             build_order_buildings.remove(building)
             break
 
-    print("INIT UNIT: " + unit.name)
+    #print("INIT UNIT: " + unit.name)
 
     return build_order_score_diff + food_and_resources_check(event, me)
 
@@ -121,7 +121,8 @@ def handle_basic_command_event(event, me):
     # TODO Handle Stop event (Unit cancelled event, restore resources) (Can I get the entity that was stopped?)
     if event.ability_name == "Stop":
         #print("STOP_EVENT")
-        print(event.name)
+        #print(event.name)
+        pass
 
     # TODO can I extract the upgrade and its cost?
     # Upgrade order
@@ -205,7 +206,7 @@ for i in range(0, len(replay.teams)):
     for j in range(0, len(replay.teams[i].players)):
             player = replay.teams[i].players[j]
             print(player)
-            print(player.name)
+            #print(player.name)
             if player.name == my_name:
                 me = player
                 print("I am " + me.name)

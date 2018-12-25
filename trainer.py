@@ -67,7 +67,7 @@ def handle_unit_init_event(event, me):
     me.current_minerals -= unit.minerals
     me.current_vespene -= unit.vespene
 
-    #print("INIT UNIT: " + unit.name)
+    print("INIT UNIT: " + unit.name)
 
     return food_and_resources_check(event, me)
 
@@ -75,15 +75,15 @@ def handle_upgrade_complete_event(event, me):
     return 0
 
 def handle_data_command_event(event, me):
-    print("DATA_COMMAND_EVENT:" + event.ability_name)
-    print(event.ability.build_unit)
+    #print("DATA_COMMAND_EVENT:" + event.ability_name)
+    #print(event.ability.build_unit)
     return 0
 
 def handle_basic_command_event(event, me):
     if event.player is not me:
         return 0
 
-    print("BASIC_COMMAND_EVENT:" + event.ability_name)
+    #print("BASIC_COMMAND_EVENT:" + event.ability_name)
     ability = event.ability
     if(ability.is_build):
         #print("BUILD UNIT: " + ability.build_unit.name)
@@ -96,7 +96,7 @@ def handle_basic_command_event(event, me):
 
     # TODO Handle Stop event (Unit cancelled event, restore resources) (Can I get the entity that was stopped?)
     if event.ability_name == "Stop":
-        print("STOP_EVENT")
+        #print("STOP_EVENT")
         print(event.name)
     # TODO Handle Upgrade initiated here (can I extract the upgrade and its cost?)
 
@@ -115,10 +115,11 @@ def food_and_resources_check(event, me):
 
     if food_used >= food_made:
         score_delta -= 1.6 * delta_frames
+        #print(str(frame) + " :: " + str(delta_frames) + " fr - " + str(score_delta) + " from capped supply")
 
-    #print("Handling PlayerStatsEvent...")
     if minerals + vespene > 500:
         score_delta -= 1.6 * delta_frames
+        #print(str(frame) + " :: " + str(delta_frames) + " fr - " + str(score_delta) + " from too many resources")
 
     me.last_checked_frame = frame
     if frame >= me.checked_seconds * 16:
@@ -135,7 +136,7 @@ print(replay.type)
 
 my_name = "Groove"
 me = None
-t_min = 20
+t_min = 15
 t_sec = 0
 
 # print all players

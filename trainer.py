@@ -122,7 +122,9 @@ def handle_basic_command_event(event, me):
     if event.ability_name == "Stop":
         #print("STOP_EVENT")
         print(event.name)
-    # TODO Handle Upgrade initiated here (can I extract the upgrade and its cost?)
+
+    # TODO can I extract the upgrade and its cost?
+    # Upgrade order
     build_order_score_diff = 0
 
     for i in range(0, len(build_order_research)):
@@ -164,8 +166,6 @@ def food_and_resources_check(event, me):
         #print(str(frame) + " :: " + str(delta_frames) + " fr - " + str(score_delta) + " from too many resources")
 
     me.last_checked_frame = frame
-    if frame >= me.checked_seconds * 16:
-        me.done = True
 
     return score_delta
 
@@ -246,9 +246,17 @@ for i in range(0, len(replay.events)):
         macro_score += handle_unit_died_event(event, me)
     #print()
 
+    if len(build_order_buildings) == 0 and len(build_order_research) == 0:
+        me.done = True
+
     if me.done:
         break
 
-macro_score = round(macro_score)
+# Time factor
+#print(me.last_checked_frame)
+#print(me.checked_seconds * 16)
+time_factor = me.checked_seconds * 16 / me.last_checked_frame
+
+macro_score = max(round(macro_score) * time_factor, 0)
 
 print("final macro score: " + str(macro_score))

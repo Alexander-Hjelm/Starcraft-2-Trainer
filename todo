@@ -1,0 +1,33 @@
+## Program outline ##
+
+Start:
+  > Look up build order info_file
+    > If not found, query for a bulid order name, create info_file and build_order_file
+  > replays_in_dir < how many files are in /replays/?
+  > replays_in_db < info_file.replay_count
+  > input = params(0)
+
+  > if (input == ENUMERATE and replays_in_dir > replays_in_db)
+    > EnumerateReplays()
+  > elif input == SHOW_GRAPH
+    > ShowGraph()
+  > elif input == ANALYZE
+    > file_name = params(1)
+    > AnalyzeReplay(file_name, verbose = YES)
+
+
+EnumerateReplays:
+  > for each file in /replays/
+    > if file.name not in info_file.enumeratedReplayNames
+      > input = query( "Would you like to add replay? " + file.name )
+        > if input = YES
+          > replay_struct < AnalyzeReplay(file, verbose = NO)
+          > info_file += replay_struct
+
+AnalyzeReplay:
+  > Run analyze replay logic
+  > Return replay_name, file_absolute_path, macro_score, match_datetime
+
+ShowGraph:
+  > read datetimes and macro scores from info_file
+  > Show graph of all scores over time, using matplotlib

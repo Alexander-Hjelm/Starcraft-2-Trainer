@@ -1,11 +1,20 @@
 import sys
 import os.path
+from os import walk
 import sc2reader
 
 class SupplyNamePair():
     def __init__(self, supply, name):
         self.supply = supply
         self.name = name
+
+class Replay():
+    def __init__(self, replay_name, player_name, build_name, match_datetime, macro_score):
+        self.replay_name = replay_name
+        self.player_name = player_name
+        self.build_name = build_name
+        self.match_datetime = match_datetime
+        self.macro_score = macro_score
 
 def handle_player_stats_event(event, me):
     player = event.player
@@ -172,15 +181,14 @@ def food_and_resources_check(event, me):
     return score_delta
 
 
-def analyze_replay(replay_path, player_name):
-    replay = sc2reader.load_replay('Better.SC2Replay', load_map=True)
+def analyze_replay(replay_path, my_name, build_name):
+    replay = sc2reader.load_replay(replay_path, load_map=True)
 
     macro_score = 100000.0;
 
     print(replay.map_name)
     print(replay.type)
 
-    my_name = "Groove"
     me = None
 
     content = None
@@ -269,7 +277,8 @@ def analyze_replay(replay_path, player_name):
     macro_score = max(round(macro_score) * time_factor, 0)
 
     #print(game_fps)
-    return macro_score
+    replay_name = replay_path.split("/")[-1]
+    return Replay(replay_name, my_name, build_name, replay.end_time, macro_score)
 
 # Main program
 
@@ -297,6 +306,7 @@ if(len(sys.argv) > 1 and sys.argv[1] == "-b"):
                 f.write(build_name + "\n")
             print("Build order created successfully")
 
+# Set replay folder
 if(len(sys.argv) > 1 and sys.argv[1] == "-r"):
     if len(sys.argv) != 3:
         print("USAGE: python3 trainer.py -r <path to SC2 replay folder>")
@@ -345,13 +355,66 @@ if(len(sys.argv) > 1 and sys.argv[1] == "-e"):
         if not found:
             print("ERROR: No build with the name " + build_name + " was found. Terminating...")
 
-        # TODO: Open enumerated_replays file, read lines
-        # TODO: Open folder, read file names
-        # TODO: For each replay file name, check if already in enumerated_replays
-        # TODO: If not, query and analyze
-        # TODO: Open build order file. Save format: replay_name, file_absolute_path, macro_score, match_datetime
+        replays = []
+        replay_strs = None
 
+        open("enumerated_replays", "a+")
 
+        with open("enumerated_replays", "r") as f:
+            replay_strs = f.readlines()
 
-#macro_score = analyze_replay("Better.SC2Replay")
-#print("final macro score: " + str(macro_score))
+        print(len(replay_strs))
+        for i in range(0, len(replay_strs)):
+            replay_strs[i] = replay_strs[i].split(":")
+            replays.append(Replay(replay_strs[i][0], replay_strs[i][1],
+            replay_strs[i][2], replay_strs[i][3], replay_strs[i][4]))
+
+        replay_path = None
+        open("replay_path", "a+")
+        with open("replay_path", "r") as f:
+            content = f.readlines()
+            if len(content) == 0:
+                print("ERROR: no replay directory found. Please specify the directory of your SC2 replay files with \"python trainer.py -r\"")
+                sys.exit()
+            else:
+                replay_path = content[0]
+
+        if not os.path.exists(replay_path):
+            print("ERROR: " + replay_path + " is not a valid directory. Set this to a valid directory with \"python3 trainer -r\". Terminating...")
+            sys.exit()
+
+        player_name = None
+        with open("player_name", "r+") as f:
+            content = f.readlines()
+            if len(content) == 0:
+                print("ERROR: no player name specified. Please specify your SC2 user name with \"python trainer.py -n\"")
+                sys.exit()
+            else:
+                player_name = content[0]
+
+        for root, dirs, files in os.walk(replay_path):
+            for i in range(0, len(files)):
+                filename = files[i]
+                print(filename)
+                found = False
+                for i in range(0, len(replays)):
+                    if filename == replays[i].replay_name:
+                        found = True
+                if not found:
+                    while True:    # input loop
+                        n = input("Found new replay: " + filename + " . Would you like to add it to your statistics? (Y/N)")
+                        if n == "y" or n == "Y":
+                            replay = analyze_replay(replay_path + "/" + filename, player_name, build_name)
+                            match_datetime_str = str(replay.match_datetime.year)
+                            match_datetime_str += "." + str(replay.match_datetime.month)
+                            match_datetime_str += "." + str(replay.match_datetime.day)
+                            match_datetime_str += "." + str(replay.match_datetime.hour)
+                            match_datetime_str += "." + str(replay.match_datetime.minute)
+                            match_datetime_str += "." + str(replay.match_datetime.second)
+                            with open("enumerated_replays", "a+") as f:
+                                f.write(replay.replay_name + ":" + replay.player_name + ":" +  replay.build_name
+                                + ":" + match_datetime_str + ":" + str(replay.macro_score) + "\n")
+                            print("Final macro score was: " + str(replay.macro_score))
+                            break
+                        elif n == "n" or n == "N":
+                            break

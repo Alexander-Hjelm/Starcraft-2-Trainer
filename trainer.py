@@ -282,6 +282,7 @@ def analyze_replay(replay_path, my_name, build_name):
 
 # Main program
 
+# Set build order name
 if(len(sys.argv) > 1 and sys.argv[1] == "-b"):
     if len(sys.argv) != 3:
         print("USAGE: python3 trainer.py -b <build order name>")
@@ -331,6 +332,26 @@ if(len(sys.argv) > 1 and sys.argv[1] == "-n"):
         with open("player_name", "w+") as f:
             f.write(name)
         print("Set player name successfully")
+
+# Analyze single replays
+if(len(sys.argv) > 1 and sys.argv[1] == "-a"):
+    if len(sys.argv) != 4:
+        print("USAGE: python3 trainer.py -a <replay file> <build order name>")
+    else:
+        # Get player name
+        file_name = sys.argv[2]
+        build_name = sys.argv[3]
+
+        player_name = None
+        with open("player_name", "r+") as f:
+            content = f.readlines()
+            if len(content) == 0:
+                print("ERROR: no player name specified. Please specify your SC2 user name with \"python trainer.py -n\"")
+                sys.exit()
+            else:
+                player_name = content[0]
+        replay = analyze_replay(file_name, player_name, build_name)
+        print("Final macro score was: " + str(replay.macro_score))
 
 # Enumerate replays
 if(len(sys.argv) > 1 and sys.argv[1] == "-e"):

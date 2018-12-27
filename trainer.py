@@ -297,17 +297,49 @@ if(len(sys.argv) > 1 and sys.argv[1] == "-b"):
                 f.write(build_name + "\n")
             print("Build order created successfully")
 
+if(len(sys.argv) > 1 and sys.argv[1] == "-rf"):
+    if len(sys.argv) != 3:
+        print("USAGE: python3 trainer.py -rf <path to SC2 replay folder>")
+    else:
+        replay_path = sys.argv[2]
+        content = None
+        if not os.path.exists(replay_path):
+            print("ERROR: " + replay_path + " is not a valid directory. Terminating...")
+        else:
+            if replay_path[len(replay_path)-1] != "/":
+                replay_path = replay_path + "/"
+            with open("replay_path", "w+") as f:
+                f.write(replay_path)
+            print("Replay path successfully set up")
 
+# Enumerate replays
+if(len(sys.argv) > 1 and sys.argv[1] == "-e"):
+    if len(sys.argv) != 3:
+        print("USAGE: python3 trainer.py -e <build order name>")
+    else:
+        build_name = sys.argv[2]
 
-build_order_names = []
+        build_order_names = []
+        with open("info", "r+") as f:
+            build_order_names = f.readlines()
 
-with open("info", "r") as f:
-    content = f.readlines()
-    build_order_names.append(content)
+        if len(build_order_names) == 0:
+            print("ERROR: no build orders found. Please specify a build order with \"python trainer.py -b\"")
+            sys.exit()
 
-if len(build_order_names) == 0 or build_order_names[0] == []:
-    print("No build orders found. Please specify a build order with \"python trainer.py -b\"")
-    sys.exit()
+        found = False
+        for i in range(0, len(build_order_names)):
+            if(build_order_names[i].rstrip() == build_name):
+                found = True
 
-macro_score = analyze_replay("Better.SC2Replay")
-print("final macro score: " + str(macro_score))
+        if not found:
+            print("ERROR: No build with the name " + build_name + " was found. Terminating...")
+
+        # TODO: Open enumerated_replays file, read lines
+        # TODO: Open folder, read file names
+        # TODO: For each replay file name, check if already in enumerated_replays
+        # TODO: If not, query and analyze
+        # TODO: Open build order file. Save format: replay_name, file_absolute_path, macro_score, match_datetime
+
+#macro_score = analyze_replay("Better.SC2Replay")
+#print("final macro score: " + str(macro_score))

@@ -172,7 +172,7 @@ def food_and_resources_check(event, me):
     return score_delta
 
 
-def analyze_replay(replay_path):
+def analyze_replay(replay_path, player_name):
     replay = sc2reader.load_replay('Better.SC2Replay', load_map=True)
 
     macro_score = 100000.0;
@@ -297,9 +297,9 @@ if(len(sys.argv) > 1 and sys.argv[1] == "-b"):
                 f.write(build_name + "\n")
             print("Build order created successfully")
 
-if(len(sys.argv) > 1 and sys.argv[1] == "-rf"):
+if(len(sys.argv) > 1 and sys.argv[1] == "-r"):
     if len(sys.argv) != 3:
-        print("USAGE: python3 trainer.py -rf <path to SC2 replay folder>")
+        print("USAGE: python3 trainer.py -r <path to SC2 replay folder>")
     else:
         replay_path = sys.argv[2]
         content = None
@@ -311,6 +311,16 @@ if(len(sys.argv) > 1 and sys.argv[1] == "-rf"):
             with open("replay_path", "w+") as f:
                 f.write(replay_path)
             print("Replay path successfully set up")
+
+# Set player names
+if(len(sys.argv) > 1 and sys.argv[1] == "-n"):
+    if len(sys.argv) != 3:
+        print("USAGE: python3 trainer.py -n <your SC2 player name>")
+    else:
+        name = sys.argv[2]
+        with open("player_name", "w+") as f:
+            f.write(name)
+        print("Set player name successfully")
 
 # Enumerate replays
 if(len(sys.argv) > 1 and sys.argv[1] == "-e"):
@@ -340,6 +350,8 @@ if(len(sys.argv) > 1 and sys.argv[1] == "-e"):
         # TODO: For each replay file name, check if already in enumerated_replays
         # TODO: If not, query and analyze
         # TODO: Open build order file. Save format: replay_name, file_absolute_path, macro_score, match_datetime
+
+
 
 #macro_score = analyze_replay("Better.SC2Replay")
 #print("final macro score: " + str(macro_score))

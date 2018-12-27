@@ -15,11 +15,11 @@ The program can also be tweaked to let you know at what timestamp your macro was
 To run Starcraft-2-Trainer, you must have python3 installed on your system. The program also requires the followind packages:
 - sc2reader library by https://github.com/GraylinKim/:
 
-```pip3 install sc2reader```
+   ```pip3 install sc2reader```
 -  the matplotlib library and all its dependencies:
 
-```pip3 install matplotlib```
+   ```pip3 install matplotlib```
 - the python3 tkinter library for gui and plotting:
 
-```sudo apt-get install python3-tk```
+   ```sudo apt-get install python3-tk```
 

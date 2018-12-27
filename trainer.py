@@ -1,4 +1,5 @@
 import sys
+import os.path
 import sc2reader
 
 class SupplyNamePair():
@@ -91,7 +92,7 @@ def handle_unit_init_event(event, me, build_order_buildings):
             build_order_buildings.remove(building)
             break
 
-    print("INIT UNIT: " + str(round(event.frame)) + " " + unit.name)
+    # print("INIT UNIT: " + str(round(event.frame)) + " " + unit.name)
 
     return build_order_score_diff + food_and_resources_check(event, me)
 
@@ -103,7 +104,7 @@ def handle_data_command_event(event, me):
     #print(event.ability.build_unit)
     return 0
 
-def handle_basic_command_event(event, me):
+def handle_basic_command_event(event, me, build_order_research):
     if event.player is not me:
         return 0
 
@@ -170,100 +171,143 @@ def food_and_resources_check(event, me):
 
     return score_delta
 
-replay = sc2reader.load_replay('Better.SC2Replay', load_map=True)
 
-macro_score = 100000.0;
+def analyze_replay(replay_path):
+    replay = sc2reader.load_replay('Better.SC2Replay', load_map=True)
 
-print(replay.map_name)
-print(replay.type)
+    macro_score = 100000.0;
 
-my_name = "Groove"
-me = None
+    print(replay.map_name)
+    print(replay.type)
 
-content = None
-#Read build order file
-with open("build_order") as f:
+    my_name = "Groove"
+    me = None
+
+    content = None
+    #Read build order file
+    with open("build_order") as f:
+        content = f.readlines()
+
+    for i in range(0, len(content)):
+        content[i] = content[i].rstrip().split(":")
+
+    #Total build order time
+    t_min = int(content[0][0])
+    t_sec = int(content[0][1])
+    game_fps = replay.game_fps
+
+    build_order_buildings = []
+    build_order_research = []
+
+    for i in range(1, len(content)):
+        if content[i][1] == "b":
+            build_order_buildings.append(SupplyNamePair(int(content[i][0]), content[i][2]))
+        if content[i][1] == "r":
+            build_order_research.append(SupplyNamePair(int(content[i][0]), content[i][2]))
+
+    # print all players
+    for i in range(0, len(replay.teams)):
+        for j in range(0, len(replay.teams[i].players)):
+                player = replay.teams[i].players[j]
+                print(player)
+                #print(player.name)
+                if player.name == my_name:
+                    me = player
+                    print("I am " + me.name)
+
+    if me is None:
+        print("Failed to initialize me")
+        sys.exit()
+
+    me.checked_seconds = t_min * 60 + t_sec
+    me.done = False
+
+    me.current_food_used = 0
+    me.current_food_made = 0
+    me.current_minerals = 0
+    me.current_vespene = 0
+    me.last_checked_frame = 0
+
+    for i in range(0, len(replay.events)):
+        event = replay.events[i]
+
+        #print(event.name)
+        #print(type(event))
+        if type(event) is sc2reader.events.tracker.PlayerStatsEvent:
+            macro_score += handle_player_stats_event(event, me)
+        elif type(event) is sc2reader.events.tracker.UnitBornEvent:
+            macro_score += handle_unit_born_event(event, me)
+        elif type(event) is sc2reader.events.tracker.UnitInitEvent:
+            macro_score += handle_unit_init_event(event, me, build_order_buildings)
+        elif type(event) is sc2reader.events.tracker.UnitDoneEvent:
+            macro_score += handle_unit_done_event(event, me)
+        elif type(event) is sc2reader.events.tracker.UpgradeCompleteEvent:
+            macro_score += handle_upgrade_complete_event(event, me)
+        elif type(event) is sc2reader.events.game.BasicCommandEvent:
+            macro_score += handle_basic_command_event(event, me, build_order_research)
+        elif type(event) is sc2reader.events.game.DataCommandEvent:
+            macro_score += handle_data_command_event(event, me)
+        elif type(event) is sc2reader.events.tracker.UnitDiedEvent:
+            macro_score += handle_unit_died_event(event, me)
+
+        #print(build_order_buildings[0].name)
+
+        if len(build_order_buildings) == 0 and len(build_order_research) == 0:
+            me.done = True
+
+        if me.done:
+            break
+
+    # Subtract for every building and research left
+    macro_score -= (len(build_order_buildings) + len(build_order_research)) * 1000
+
+    # Time factor
+    #print(me.last_checked_frame)
+    #print(me.checked_seconds * 16)
+    time_factor = me.checked_seconds * game_fps / me.last_checked_frame
+
+    macro_score = max(round(macro_score) * time_factor, 0)
+
+    #print(game_fps)
+    return macro_score
+
+# Main program
+
+if(len(sys.argv) > 1 and sys.argv[1] == "-b"):
+    if len(sys.argv) != 3:
+        print("USAGE: python3 trainer.py -b <build order name>")
+    else:
+        build_name = sys.argv[2]
+        open("info", "a+")
+        content = None
+        with open("info", "r") as f:
+            content = f.readlines()
+        build_found = False
+        for i in range(0, len(content)):
+            if(content[i].rstrip() == build_name):
+                build_found = True
+                break
+        if build_found:
+            print("ERROR: Build with that name was already found. Terminating...")
+        else:
+            if not os.path.exists("builds"):
+                os.makedirs("builds")
+            open("builds/" + build_name, "a+")
+            with open("info", "a") as f:
+                f.write(build_name + "\n")
+            print("Build order created successfully")
+
+
+
+build_order_names = []
+
+with open("info", "r") as f:
     content = f.readlines()
+    build_order_names.append(content)
 
-for i in range(0, len(content)):
-    content[i] = content[i].rstrip().split(":")
-
-#Total build order time
-t_min = int(content[0][0])
-t_sec = int(content[0][1])
-game_fps = replay.game_fps
-
-build_order_buildings = []
-build_order_research = []
-
-for i in range(1, len(content)):
-    if content[i][1] == "b":
-        build_order_buildings.append(SupplyNamePair(int(content[i][0]), content[i][2]))
-    if content[i][1] == "r":
-        build_order_research.append(SupplyNamePair(int(content[i][0]), content[i][2]))
-
-# print all players
-for i in range(0, len(replay.teams)):
-    for j in range(0, len(replay.teams[i].players)):
-            player = replay.teams[i].players[j]
-            print(player)
-            #print(player.name)
-            if player.name == my_name:
-                me = player
-                print("I am " + me.name)
-
-if me is None:
-    print("Failed to initialize me")
+if len(build_order_names) == 0 or build_order_names[0] == []:
+    print("No build orders found. Please specify a build order with \"python trainer.py -b\"")
     sys.exit()
 
-me.checked_seconds = t_min * 60 + t_sec
-me.done = False
-
-me.current_food_used = 0
-me.current_food_made = 0
-me.current_minerals = 0
-me.current_vespene = 0
-me.last_checked_frame = 0
-
-for i in range(0, len(replay.events)):
-    event = replay.events[i]
-
-    #print(event.name)
-    #print(type(event))
-    if type(event) is sc2reader.events.tracker.PlayerStatsEvent:
-        macro_score += handle_player_stats_event(event, me)
-    elif type(event) is sc2reader.events.tracker.UnitBornEvent:
-        macro_score += handle_unit_born_event(event, me)
-    elif type(event) is sc2reader.events.tracker.UnitInitEvent:
-        macro_score += handle_unit_init_event(event, me, build_order_buildings)
-    elif type(event) is sc2reader.events.tracker.UnitDoneEvent:
-        macro_score += handle_unit_done_event(event, me)
-    elif type(event) is sc2reader.events.tracker.UpgradeCompleteEvent:
-        macro_score += handle_upgrade_complete_event(event, me)
-    elif type(event) is sc2reader.events.game.BasicCommandEvent:
-        macro_score += handle_basic_command_event(event, me)
-    elif type(event) is sc2reader.events.game.DataCommandEvent:
-        macro_score += handle_data_command_event(event, me)
-    elif type(event) is sc2reader.events.tracker.UnitDiedEvent:
-        macro_score += handle_unit_died_event(event, me)
-
-    #print(build_order_buildings[0].name)
-
-    if len(build_order_buildings) == 0 and len(build_order_research) == 0:
-        me.done = True
-
-    if me.done:
-        break
-
-# Subtract for every building and research left
-macro_score -= (len(build_order_buildings) + len(build_order_research)) * 1000
-
-# Time factor
-#print(me.last_checked_frame)
-#print(me.checked_seconds * 16)
-time_factor = me.checked_seconds * game_fps / me.last_checked_frame
-
-macro_score = max(round(macro_score) * time_factor, 0)
-
-print(game_fps)
+macro_score = analyze_replay("Better.SC2Replay")
 print("final macro score: " + str(macro_score))

@@ -2,11 +2,19 @@ import sys
 import os.path
 from os import walk
 import sc2reader
+import numpy
+import datetime
+import matplotlib.pyplot
 
 class SupplyNamePair():
     def __init__(self, supply, name):
         self.supply = supply
         self.name = name
+
+class ScoreTimePair():
+    def __init__(self, score, time):
+        self.score = score
+        self.time = time
 
 class Replay():
     def __init__(self, replay_name, player_name, build_name, match_datetime, macro_score):
@@ -280,6 +288,49 @@ def analyze_replay(replay_path, my_name, build_name):
     replay_name = replay_path.split("/")[-1]
     return Replay(replay_name, my_name, build_name, replay.end_time, macro_score)
 
+def get_replays_for_build(build_name):
+    build_order_names = []
+    with open("info", "r+") as f:
+        build_order_names = f.readlines()
+
+    if len(build_order_names) == 0:
+        print("ERROR: no build orders found. Please specify a build order with \"python trainer.py -b\"")
+        sys.exit()
+
+    found = False
+    for i in range(0, len(build_order_names)):
+        if(build_order_names[i].rstrip() == build_name):
+            found = True
+
+    if not found:
+        print("ERROR: No build with the name " + build_name + " was found. Terminating...")
+
+    replays = []
+    replay_strs = None
+
+    open("enumerated_replays", "a+")
+
+    with open("enumerated_replays", "r") as f:
+        replay_strs = f.readlines()
+
+    print(len(replay_strs))
+    for i in range(0, len(replay_strs)):
+        replay_strs[i] = replay_strs[i].split(":")
+        replays.append(Replay(replay_strs[i][0], replay_strs[i][1],
+        replay_strs[i][2], replay_strs[i][3], replay_strs[i][4]))
+
+    return replays
+
+def get_player_name():
+    with open("player_name", "r+") as f:
+        content = f.readlines()
+        if len(content) == 0:
+            print("ERROR: no player name specified. Please specify your SC2 user name with \"python trainer.py -n\"")
+            sys.exit()
+        else:
+            player_name = content[0]
+
+
 # Main program
 
 # Set build order name
@@ -360,35 +411,7 @@ if(len(sys.argv) > 1 and sys.argv[1] == "-e"):
     else:
         build_name = sys.argv[2]
 
-        build_order_names = []
-        with open("info", "r+") as f:
-            build_order_names = f.readlines()
-
-        if len(build_order_names) == 0:
-            print("ERROR: no build orders found. Please specify a build order with \"python trainer.py -b\"")
-            sys.exit()
-
-        found = False
-        for i in range(0, len(build_order_names)):
-            if(build_order_names[i].rstrip() == build_name):
-                found = True
-
-        if not found:
-            print("ERROR: No build with the name " + build_name + " was found. Terminating...")
-
-        replays = []
-        replay_strs = None
-
-        open("enumerated_replays", "a+")
-
-        with open("enumerated_replays", "r") as f:
-            replay_strs = f.readlines()
-
-        print(len(replay_strs))
-        for i in range(0, len(replay_strs)):
-            replay_strs[i] = replay_strs[i].split(":")
-            replays.append(Replay(replay_strs[i][0], replay_strs[i][1],
-            replay_strs[i][2], replay_strs[i][3], replay_strs[i][4]))
+        replays = get_replays_for_build(build_name)
 
         replay_path = None
         open("replay_path", "a+")
@@ -404,14 +427,7 @@ if(len(sys.argv) > 1 and sys.argv[1] == "-e"):
             print("ERROR: " + replay_path + " is not a valid directory. Set this to a valid directory with \"python3 trainer -r\". Terminating...")
             sys.exit()
 
-        player_name = None
-        with open("player_name", "r+") as f:
-            content = f.readlines()
-            if len(content) == 0:
-                print("ERROR: no player name specified. Please specify your SC2 user name with \"python trainer.py -n\"")
-                sys.exit()
-            else:
-                player_name = content[0]
+        player_name = get_player_name()
 
         for root, dirs, files in os.walk(replay_path):
             for i in range(0, len(files)):
@@ -439,3 +455,42 @@ if(len(sys.argv) > 1 and sys.argv[1] == "-e"):
                             break
                         elif n == "n" or n == "N":
                             break
+
+# Plot progress
+if(len(sys.argv) > 1 and sys.argv[1] == "-p"):
+    if len(sys.argv) != 3:
+        print("USAGE: python3 trainer.py -p <build order name>")
+    else:
+        build_name = sys.argv[2]
+        player_name = get_player_name()
+        replays = get_replays_for_build(build_name)
+
+        scores_date_pairs = []
+
+        for i in range(0, len(replays)):
+            replay = replays[i]
+            if replay.player_name != player_name or replay.build_name != build_name:
+                dt_strs = replays[i].match_datetime.split(".")
+                dt = datetime.datetime(int(dt_strs[0]), int(dt_strs[1]), int(dt_strs[2]), int(dt_strs[3]), int(dt_strs[4]), int(dt_strs[5]))
+
+                print(replays[i].macro_score)
+
+                scores_date_pairs.append(ScoreTimePair(int(round(float(replays[i].macro_score))), dt))
+
+        print("")
+        #scores_date_pairs.sort()
+        scores_date_pairs.sort(key=lambda x: x.time, reverse=True)
+
+        datetimes = []
+        scores = []
+
+        for i in range(0, len(scores_date_pairs)):
+            datetimes.append(scores_date_pairs[i].time)
+            scores.append(scores_date_pairs[i].score)
+
+        dates = matplotlib.dates.date2num(datetimes)
+
+        matplotlib.pyplot.gcf().autofmt_xdate()
+        matplotlib.pyplot.plot_date(dates, scores, linestyle='dashed')
+        #print(scores[0])
+        matplotlib.pyplot.show()

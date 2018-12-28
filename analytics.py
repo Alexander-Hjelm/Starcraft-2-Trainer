@@ -3,6 +3,7 @@ import sc2reader
 from data_structs import SupplyNamePair
 from data_structs import ReplayData
 
+# Update event that is sent every 10 seconds
 def handle_player_stats_event(event, me):
     player = event.player
     if player is not me:
@@ -17,6 +18,7 @@ def handle_player_stats_event(event, me):
 
     return score_delta
 
+# A unit without initialization time (e.g. marine, zergling) is born
 def handle_unit_born_event(event, me):
     player = event.unit_controller
     if player is not me:
@@ -30,6 +32,7 @@ def handle_unit_born_event(event, me):
     #print("Unit born: " + event.unit.name)
     return food_and_resources_check(event, me)
 
+# A unit with initialization time (e.g. buildings, warped in units) is born
 def handle_unit_done_event(event, me):
     #print("Unit done: " + event.unit.name)
     player = event.unit.owner
@@ -43,6 +46,7 @@ def handle_unit_done_event(event, me):
 
     return food_and_resources_check(event, me)
 
+# A unit died
 def handle_unit_died_event(event, me):
     player = event.unit.owner
     if player is not me:
@@ -56,6 +60,7 @@ def handle_unit_died_event(event, me):
 
     return food_and_resources_check(event, me)
 
+# A unit with initialization time (e.g. buildings, warped in units) has began creation
 def handle_unit_init_event(event, me, build_order_buildings):
     player = event.unit_controller
     if player is not me:
@@ -73,9 +78,7 @@ def handle_unit_init_event(event, me, build_order_buildings):
     # TODO: Not perfect. Should remove the building from build_order_buildings when it is complete. Consider a temporary buildings_in_progress struct
     for i in range(0, len(build_order_buildings)):
         building = build_order_buildings[i]
-        #print("CHECKING: '" + unit.name + "' against '" + building.name + "'")
         if unit.name == building.name:
-            #print("BUILT: " + unit.name + " from build order")
             supply_diff = me.current_food_used - building.supply
             if supply_diff > 0:
                 # Building was too early
@@ -92,24 +95,25 @@ def handle_unit_init_event(event, me, build_order_buildings):
 
     return build_order_score_diff + food_and_resources_check(event, me)
 
+# An upgrade is completed. Not currently used
 def handle_upgrade_complete_event(event, me):
     return 0
 
+# Data command event. Not currently used
 def handle_data_command_event(event, me):
-    #print("DATA_COMMAND_EVENT:" + event.ability_name)
-    #print(event.ability.build_unit)
     return 0
 
+# Basic command event. Includes initiating updgrades
 def handle_basic_command_event(event, me, build_order_research):
     if event.player is not me:
         return 0
 
-    #print("BASIC_COMMAND_EVENT:" + event.ability_name)
+    # Get the associated ability of the event
     ability = event.ability
     if(ability.is_build):
-        #print("BUILD UNIT: " + ability.build_unit.name)
         unit = ability.build_unit
         supply = unit.supply
+        # Add supply, remove resources
         if supply > 0:
             me.current_food_used += unit.supply
         me.current_minerals -= unit.minerals
@@ -117,26 +121,24 @@ def handle_basic_command_event(event, me, build_order_research):
 
     # TODO Handle Stop event (Unit cancelled event, restore resources) (Can I get the entity that was stopped?)
     if event.ability_name == "Stop":
-        #print("STOP_EVENT")
-        #print(event.name)
         pass
 
     # TODO can I extract the upgrade and its cost?
+
     # Upgrade order
     build_order_score_diff = 0
 
+    # Find the ability that matches the research in the build order
     for i in range(0, len(build_order_research)):
         research = build_order_research[i]
-        #print("CHECKING: '" + event.ability_name + "' against '" + research.name + "'")
         if event.ability_name == research.name:
-            #print("RESEARCHED: " + research.name + " from build order")
             supply_diff = me.current_food_used - research.supply
             if supply_diff > 0:
-                # Building was too early
+                # Upgrade was too early
                 build_order_score_diff -= supply_diff * 100
                 #print("TOO EARLY: " + event.ability_name)
             elif supply_diff < 0:
-                # Building was too late
+                # Upgrade was too late
                 build_order_score_diff -= -supply_diff * 100
                 #print("TOO LATE: " + event.ability_name)
             build_order_research.remove(research)
@@ -144,6 +146,8 @@ def handle_basic_command_event(event, me, build_order_research):
 
     return build_order_score_diff + food_and_resources_check(event, me)
 
+# Check how supply and resources have changed since the last event,
+# and deduct score based on that
 def food_and_resources_check(event, me):
     frame = event.frame
     delta_frames = frame - me.last_checked_frame
@@ -256,13 +260,10 @@ def analyze_replay(replay_path, my_name, build_name):
     # Subtract for every building and research left
     macro_score -= (len(build_order_buildings) + len(build_order_research)) * 1000
 
-    # Time factor
-    #print(me.last_checked_frame)
-    #print(me.checked_seconds * 16)
+    # Time factor. Gives a penatly/bonus if the build order was comleted late/early.
     time_factor = me.checked_seconds * game_fps / me.last_checked_frame
 
     macro_score = max(round(macro_score) * time_factor, 0)
 
-    #print(game_fps)
     replay_name = replay_path.split("/")[-1]
     return ReplayData(replay_name, my_name, build_name, replay.end_time, macro_score)

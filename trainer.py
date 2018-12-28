@@ -494,3 +494,22 @@ if(len(sys.argv) > 1 and sys.argv[1] == "-p"):
         matplotlib.pyplot.plot_date(dates, scores, linestyle='dashed')
         #print(scores[0])
         matplotlib.pyplot.show()
+
+# Plot progress
+if(len(sys.argv) == 1 or (len(sys.argv) > 1 and (sys.argv[1] == "-h" or sys.argv[1] == "--help"))):
+    print("Usage: python3 trainer.py <options>"
+    + "\n"
+    + "\nIMPORTANT: before discovering and analyzing replays, run the following sequence to set up your SC2 player name, replay directory and a name for your build order."
+    + "\n python3 trainer.py -n <your SC2 profile name>"
+    + "\n python3 trainer.py -b <your build order name>"
+    + "\n python3 trainer.py -r <path to SC2 replay folder>"
+    + "\n"
+    + "\nAllowed options:"
+    + "\n -e <build order name>\t\t\tDiscover all new replays in the replay folder and add them to your statistics."
+    + "\n -p <build order name>\t\t\tPlot your progress with the selected build order."
+    + "\n -a <replay file> <build order name>\tAnalyze a single replay file. Generates a score and a match report, but does not add anything to your statistics."
+    + "\n"
+    + "\n -n <string>\t\t\t\tSet your SC2 profile name. Do not include you clan tag or bnet tag."
+    + "\n -r <string>\t\t\t\tSet the path to your replay folder. On windows, this is usually something like C:\Documents\StarCraft II\Accounts\[number]\[other]\Replays"
+    + "\n -b <string>\t\t\t\tSet the name of your build order. This will generate a file in the ./builds folder which you can edit."
+    )
